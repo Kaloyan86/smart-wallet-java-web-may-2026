@@ -1,7 +1,9 @@
 package app.service.user;
 
 import app.mapper.user.UserMapper;
+import app.model.dto.user.EditUserRequest;
 import app.model.dto.user.UserDto;
+import app.model.dto.user.UserLoginRequest;
 import app.model.dto.user.UserRegisterRequest;
 import app.model.entity.subscription.Subscription;
 import app.model.entity.user.User;
@@ -9,14 +11,19 @@ import app.model.entity.wallet.Wallet;
 import app.repository.user.UserRepository;
 import app.service.subscription.SubscriptionService;
 import app.service.wallet.WalletService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.EditorKit;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
+@Transactional
 public class UserService {
 
     private UserRepository userRepository;
@@ -32,15 +39,28 @@ public class UserService {
         this.walletService = walletService;
     }
 
-    public UserDto register(UserRegisterRequest userRegisterRequest){
+    public UserDto login(UserLoginRequest userLoginRequest) {
+        Optional<User> optionalUser = userRepository.findByUsername(userLoginRequest.getUsername());
+
+        if (optionalUser.isEmpty() ||
+                !passwordEncoder.matches(userLoginRequest.getPassword(), optionalUser.get().getPassword())
+        ) {
+
+            throw new RuntimeException("Username or password mismatch!");
+        }
+
+        return UserMapper.toUserDto(optionalUser.get());
+    }
+
+    public UserDto register(UserRegisterRequest userRegisterRequest) {
         //   1.	Account Creation: Validate the username to ensure its unique and store the user’s details securely.
         //   You must consider persisting user’s sensitive data in a secure way!
 
         userRepository.findByUsername(userRegisterRequest.getUsername())
                 .ifPresent(user -> {
-            //TODO: Create custom exception e.g. UserAlreadyExistsException
-            throw new RuntimeException("User with this username already exists!");
-        });
+                    //TODO: Create custom exception e.g. UserAlreadyExistsException
+                    throw new RuntimeException("User with this username already exists!");
+                });
 
         String encodedPassword = passwordEncoder.encode(userRegisterRequest.getPassword());
         userRegisterRequest.setPassword(encodedPassword);
@@ -61,4 +81,30 @@ public class UserService {
         return UserMapper.toUserDto(userEntity);
     }
 
+    public List<UserDto> findAll() {
+        return userRepository.findAll().stream().map(UserMapper::toUserDto).toList();
+    }
+
+    public UserDto findById(String id) {
+        User user = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(
+                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+        return UserMapper.toUserDto(user);
+    }
+
+    public UserDto update(String id, EditUserRequest editUserRequest) {
+        User entity = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(
+                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+
+        // Update the user entity with the new information
+        entity.setFirstName(editUserRequest.getFirstName());
+        entity.setLastName(editUserRequest.getLastName());
+        entity.setProfilePicture(editUserRequest.getProfilePicture());
+        entity.setEmail(editUserRequest.getEmail());
+
+        User updatedUser = userRepository.save(entity);
+
+        return UserMapper.toUserDto(updatedUser);
+    }
 }
