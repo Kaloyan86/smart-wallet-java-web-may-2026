@@ -1,5 +1,7 @@
 package app.service.transaction;
 
+import app.mapper.transaction.TransactionMapper;
+import app.model.dto.transaction.TransactionDto;
 import app.model.entity.transaction.Transaction;
 import app.model.entity.transaction.TransactionStatus;
 import app.model.entity.transaction.TransactionType;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.UUID;
 
 @Service
 public class TransactionService {
@@ -49,5 +52,11 @@ public class TransactionService {
                 .build();
 
         return transactionRepository.save(transaction);
+    }
+
+    public TransactionDto getById(String id) {
+        Transaction transaction = transactionRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new RuntimeException("Transaction not found with id: " + id));
+        return TransactionMapper.toDto(transaction);
     }
 }

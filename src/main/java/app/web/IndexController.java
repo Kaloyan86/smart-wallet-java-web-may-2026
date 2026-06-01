@@ -3,14 +3,12 @@ package app.web;
 import app.model.dto.user.UserDto;
 import app.model.dto.user.UserLoginRequest;
 import app.model.dto.user.UserRegisterRequest;
-import app.model.entity.user.Country;
 import app.service.user.UserService;
-import org.springframework.boot.Banner;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -33,13 +31,20 @@ public class IndexController {
 
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("login");
-        modelAndView.addObject("userLoginData", userLoginRequest);
+        modelAndView.addObject("userLoginRequest", userLoginRequest);
 
         return modelAndView;
     }
 
     @PostMapping("/login")
-    public ModelAndView login(@ModelAttribute UserLoginRequest userLoginRequest) {
+    public ModelAndView login(@Valid UserLoginRequest userLoginRequest,
+                              BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView();
+            modelAndView.setViewName("login");
+            return modelAndView;
+        }
+
         UserDto user = userService.login(userLoginRequest);
 
         ModelAndView modelAndView = new ModelAndView();
@@ -61,7 +66,14 @@ public class IndexController {
     }
 
     @PostMapping("/register")
-    public ModelAndView registerUser(@ModelAttribute UserRegisterRequest userRegisterRequest) {
+    public ModelAndView registerUser(@Valid UserRegisterRequest userRegisterRequest,
+                                     BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView();
+            modelAndView.setViewName("register");
+            return modelAndView;
+        }
+
         userService.register(userRegisterRequest);
 
         return new ModelAndView("redirect:/login");
@@ -69,6 +81,11 @@ public class IndexController {
 
     @GetMapping("/home")
     public ModelAndView getHomePage() {
-        return new ModelAndView("home");
+        UserDto user = userService.getById("532abc8e-ed27-439b-9861-94d6fae05005");
+
+        ModelAndView modelAndView = new ModelAndView("home");
+        modelAndView.addObject("user", user);
+
+        return modelAndView;
     }
 }

@@ -12,12 +12,10 @@ import app.repository.user.UserRepository;
 import app.service.subscription.SubscriptionService;
 import app.service.wallet.WalletService;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.EditorKit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,7 +83,7 @@ public class UserService {
         return userRepository.findAll().stream().map(UserMapper::toUserDto).toList();
     }
 
-    public UserDto findById(String id) {
+    public UserDto getById(String id) {
         User user = userRepository.findById(UUID.fromString(id))
                 .orElseThrow(
                         () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));

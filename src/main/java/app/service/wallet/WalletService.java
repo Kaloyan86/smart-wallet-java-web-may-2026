@@ -1,5 +1,10 @@
 package app.service.wallet;
 
+import app.mapper.transaction.TransactionMapper;
+import app.mapper.user.UserMapper;
+import app.model.dto.transaction.TransactionDto;
+import app.model.dto.transfer.TransferRequest;
+import app.model.dto.user.UserDto;
 import app.model.entity.transaction.Transaction;
 import app.model.entity.transaction.TransactionStatus;
 import app.model.entity.transaction.TransactionType;
@@ -8,7 +13,6 @@ import app.model.entity.wallet.Wallet;
 import app.model.entity.wallet.WalletStatus;
 import app.repository.wallet.WalletRepository;
 import app.service.transaction.TransactionService;
-import org.springframework.boot.actuate.management.ThreadDumpEndpoint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +26,12 @@ import java.util.UUID;
 @Transactional
 public class WalletService {
 
-    private final ThreadDumpEndpoint threadDumpEndpoint;
     WalletRepository walletRepository;
     TransactionService transactionService;
 
-    public WalletService(WalletRepository walletRepository, TransactionService transactionService, ThreadDumpEndpoint threadDumpEndpoint) {
+    public WalletService(WalletRepository walletRepository, TransactionService transactionService) {
         this.walletRepository = walletRepository;
         this.transactionService = transactionService;
-        this.threadDumpEndpoint = threadDumpEndpoint;
     }
 
     //TODO: Create TransactionDTO
@@ -38,7 +40,7 @@ public class WalletService {
         Optional<Wallet> optionalWallet = walletRepository.findById(walletId);
 
         if (optionalWallet.isEmpty()) {
-           throw new RuntimeException("Wallet with id [%s] not found.".formatted(walletId));
+            throw new RuntimeException("Wallet with id [%s] not found.".formatted(walletId));
         }
 
         Wallet wallet = optionalWallet.get();
@@ -94,7 +96,7 @@ public class WalletService {
         return wallet;
     }
 
-    public Transaction charge(User user,UUID walledId, BigDecimal amount, String chargeDescription) {
+    public Transaction charge(User user, UUID walledId, BigDecimal amount, String chargeDescription) {
         Optional<Wallet> optionalWallet = walletRepository.findById(walledId);
 
         if (optionalWallet.isEmpty()) {
@@ -108,7 +110,7 @@ public class WalletService {
             return transactionService.createNewTransaction(
                     wallet.getOwner(),
                     wallet.getId().toString(),
-                    "Some Receiver",
+                    user.getUsername(),
                     amount,
                     wallet.getBalance(),
                     wallet.getCurrency(),
@@ -124,7 +126,7 @@ public class WalletService {
             return transactionService.createNewTransaction(
                     wallet.getOwner(),
                     wallet.getId().toString(),
-                    "Some Receiver",
+                    user.getUsername(),
                     amount,
                     wallet.getBalance(),
                     wallet.getCurrency(),
@@ -142,7 +144,7 @@ public class WalletService {
         return transactionService.createNewTransaction(
                 wallet.getOwner(),
                 wallet.getId().toString(),
-                "Some Receiver",
+                user.getUsername(),
                 amount,
                 wallet.getBalance(),
                 wallet.getCurrency(),
@@ -152,6 +154,61 @@ public class WalletService {
                 null
         );
     }
+
+    public TransactionDto transferFunds(UserDto senderDto, TransferRequest transferRequest) {
+        User sender = UserMapper.toEntity(senderDto);
+        Wallet senderWallet = walletRepository.findById(transferRequest.getFromWalletId())
+                .orElseThrow(() -> new RuntimeException("Wallet with id [%s] not found.".formatted(transferRequest.getFromWalletId())));
+
+        Optional<Wallet> receiver = walletRepository.findAllByOwner_Username(transferRequest.getToUsername())
+                .stream()
+                .filter(wallet -> wallet.getStatus().equals(WalletStatus.ACTIVE))
+                .findFirst();
+
+        if (receiver.isEmpty()) {
+            Transaction transaction = transactionService.createNewTransaction(
+                    sender,
+                    senderWallet.getId().toString(),
+                    transferRequest.getToUsername(),
+                    transferRequest.getAmount(),
+                    senderWallet.getBalance(),
+                    senderWallet.getCurrency(),
+                    TransactionType.WITHDRAWAL,
+                    TransactionStatus.FAILED,
+                    "Transfer to %s failed.".formatted(transferRequest.getToUsername()),
+                    "Receiver does not have an active wallet. Please ask the receiver to create an active wallet and try again.");
+
+            return TransactionMapper.toDto(transaction);
+        }
+
+        Transaction withdrawal = charge(sender,
+                senderWallet.getId(),
+                transferRequest.getAmount(),
+                "Transfer to %s".formatted(transferRequest.getToUsername())
+        );
+
+        if (withdrawal.getStatus().equals(TransactionStatus.FAILED)) {
+            return TransactionMapper.toDto(withdrawal);
+        }
+
+        Wallet receiverWallet = receiver.get();
+        receiverWallet.setBalance(receiverWallet.getBalance().add(transferRequest.getAmount()));
+        walletRepository.save(receiverWallet);
+
+        Transaction transaction = transactionService.createNewTransaction(
+                receiverWallet.getOwner(),
+                senderWallet.getId().toString(),
+                transferRequest.getToUsername(),
+                transferRequest.getAmount(),
+                receiverWallet.getBalance(),
+                receiverWallet.getCurrency(),
+                TransactionType.DEPOSIT,
+                TransactionStatus.SUCCEEDED,
+                "Transfer to %s.".formatted(transferRequest.getToUsername()),
+                null);
+        return TransactionMapper.toDto(transaction);
+    }
+}
 
 //    public void createNewWallet(User user) {
 //
@@ -166,4 +223,4 @@ public class WalletService {
 //
 //        walletRepository.save(wallet);
 //    }
-}
+

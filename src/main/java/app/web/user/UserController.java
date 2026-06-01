@@ -19,7 +19,7 @@ public class UserController {
 
     @GetMapping("/{id}/profile")
     public ModelAndView profile(@PathVariable  String id) {
-        UserDto user = userService.findById(id);
+        UserDto user = userService.getById(id);
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("profile-menu");
         modelAndView.addObject("user", user);
