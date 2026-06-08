@@ -32,6 +32,7 @@ public class UserInit implements CommandLineRunner {
                 .country(Country.BULGARIA)
                 .build();
 
+        //TODO: create registerAdmin method
         userService.register(userRegisterRequest);
 
         log.info("Default user created with username [%s] and password [%s].".formatted(

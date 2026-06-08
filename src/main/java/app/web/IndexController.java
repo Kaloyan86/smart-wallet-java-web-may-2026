@@ -4,12 +4,16 @@ import app.model.dto.user.UserDto;
 import app.model.dto.user.UserLoginRequest;
 import app.model.dto.user.UserRegisterRequest;
 import app.service.user.UserService;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.util.UUID;
 
 @Controller
 public class IndexController {
@@ -38,7 +42,10 @@ public class IndexController {
 
     @PostMapping("/login")
     public ModelAndView login(@Valid UserLoginRequest userLoginRequest,
-                              BindingResult bindingResult) {
+                              BindingResult bindingResult,
+                              HttpSession httpSession,
+                              HttpServletResponse response
+    ) {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView();
             modelAndView.setViewName("login");
@@ -46,12 +53,9 @@ public class IndexController {
         }
 
         UserDto user = userService.login(userLoginRequest);
+        httpSession.setAttribute("user_id", user.getId());
 
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("home");
-        modelAndView.addObject("user", user);
-
-        return modelAndView;
+        return new ModelAndView("redirect:/home");
     }
 
     @GetMapping("/register")
@@ -80,12 +84,21 @@ public class IndexController {
     }
 
     @GetMapping("/home")
-    public ModelAndView getHomePage() {
-        UserDto user = userService.getById("532abc8e-ed27-439b-9861-94d6fae05005");
+    public ModelAndView getHomePage(HttpSession httpSession) {
+
+        UUID userUUID = (UUID) httpSession.getAttribute("user_id");
+
+        UserDto user = userService.getById(userUUID);
 
         ModelAndView modelAndView = new ModelAndView("home");
         modelAndView.addObject("user", user);
 
         return modelAndView;
+    }
+
+    @GetMapping("/logout")
+    public ModelAndView getLogoutPage(HttpSession httpSession) {
+        httpSession.invalidate();
+        return new ModelAndView("redirect:/");
     }
 }

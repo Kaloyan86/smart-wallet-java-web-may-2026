@@ -7,6 +7,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.util.UUID;
+
 @Controller
 @RequestMapping("/users")
 public class UserController {
@@ -19,7 +21,7 @@ public class UserController {
 
     @GetMapping("/{id}/profile")
     public ModelAndView profile(@PathVariable  String id) {
-        UserDto user = userService.getById(id);
+        UserDto user = userService.getById(UUID.fromString(id));
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("profile-menu");
         modelAndView.addObject("user", user);
@@ -36,5 +38,25 @@ public class UserController {
         modelAndView.addObject("user", updatedUser);
 
         return modelAndView;
+    }
+
+    @GetMapping()
+    public ModelAndView getAllUsers() {
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("users");
+        modelAndView.addObject("users", userService.getAllUsers());
+        return modelAndView;
+    }
+
+    @PutMapping("/{id}/status")
+    public ModelAndView switchUserStatus(@PathVariable String id) {
+        userService.switchStatus(UUID.fromString(id));
+        return new  ModelAndView("redirect:/users");
+    }
+
+    @PutMapping("/{id}/role")
+    public ModelAndView switchUserRole(@PathVariable String id) {
+        userService.switchRole(UUID.fromString(id));
+        return new  ModelAndView("redirect:/users");
     }
 }

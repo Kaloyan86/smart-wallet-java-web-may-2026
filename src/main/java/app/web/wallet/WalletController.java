@@ -4,12 +4,14 @@ import app.model.dto.user.UserDto;
 import app.model.dto.wallet.WalletDto;
 import app.repository.wallet.WalletRepository;
 import app.service.user.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/wallets")
@@ -22,8 +24,8 @@ public class WalletController {
     }
 
     @GetMapping
-    public ModelAndView getWallets() {
-        UserDto user = userService.getById("532abc8e-ed27-439b-9861-94d6fae05005");
+    public ModelAndView getWallets(HttpSession session) {
+        UserDto user = userService.getById((UUID) session.getAttribute("user_id"));
         List<WalletDto> wallets = user.getWallets();
 
          ModelAndView modelAndView = new ModelAndView();
