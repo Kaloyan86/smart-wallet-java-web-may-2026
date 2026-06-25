@@ -3,7 +3,6 @@ package app.service.user;
 import app.mapper.user.UserMapper;
 import app.model.dto.user.EditUserRequest;
 import app.model.dto.user.UserDto;
-import app.model.dto.user.UserLoginRequest;
 import app.model.dto.user.UserRegisterRequest;
 import app.model.entity.subscription.Subscription;
 import app.model.entity.user.User;
@@ -14,16 +13,19 @@ import app.service.subscription.SubscriptionService;
 import app.service.wallet.WalletService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @Transactional
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -38,18 +40,18 @@ public class UserService {
         this.walletService = walletService;
     }
 
-    public UserDto login(UserLoginRequest userLoginRequest) {
-        Optional<User> optionalUser = userRepository.findByUsername(userLoginRequest.getUsername());
-
-        if (optionalUser.isEmpty() ||
-                !passwordEncoder.matches(userLoginRequest.getPassword(), optionalUser.get().getPassword())
-        ) {
-
-            throw new RuntimeException("Username or password mismatch!");
-        }
-
-        return UserMapper.toUserDto(optionalUser.get());
-    }
+//    public UserDto login(UserLoginRequest userLoginRequest) {
+//        Optional<User> optionalUser = userRepository.findByUsername(userLoginRequest.getUsername());
+//
+//        if (optionalUser.isEmpty() ||
+//                !passwordEncoder.matches(userLoginRequest.getPassword(), optionalUser.get().getPassword())
+//        ) {
+//
+//            throw new RuntimeException("Username or password mismatch!");
+//        }
+//
+//        return UserMapper.toUserDto(optionalUser.get());
+//    }
 
     public UserDto register(UserRegisterRequest userRegisterRequest) {
         //   1.	Account Creation: Validate the username to ensure its unique and store the user’s details securely.
@@ -107,6 +109,7 @@ public class UserService {
         return UserMapper.toUserDto(updatedUser);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -114,6 +117,7 @@ public class UserService {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void switchStatus(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(
@@ -123,6 +127,8 @@ public class UserService {
         userRepository.save(user);
     }
 
+
+    @PreAuthorize("hasRole('ADMIN')")
     public void switchRole(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(
@@ -134,5 +140,20 @@ public class UserService {
             user.setRole(UserRole.USER);
         }
         userRepository.save(user);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(username));
+
+        return AuthenticationUserDetails.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .role(user.getRole())
+                .isActive(user.isActive())
+                .build();
     }
 }

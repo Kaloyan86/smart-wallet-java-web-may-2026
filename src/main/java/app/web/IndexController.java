@@ -3,17 +3,15 @@ package app.web;
 import app.model.dto.user.UserDto;
 import app.model.dto.user.UserLoginRequest;
 import app.model.dto.user.UserRegisterRequest;
+import app.service.user.AuthenticationUserDetails;
 import app.service.user.UserService;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.util.UUID;
 
 @Controller
 public class IndexController {
@@ -38,24 +36,6 @@ public class IndexController {
         modelAndView.addObject("userLoginRequest", userLoginRequest);
 
         return modelAndView;
-    }
-
-    @PostMapping("/login")
-    public ModelAndView login(@Valid UserLoginRequest userLoginRequest,
-                              BindingResult bindingResult,
-                              HttpSession httpSession,
-                              HttpServletResponse response
-    ) {
-        if (bindingResult.hasErrors()) {
-            ModelAndView modelAndView = new ModelAndView();
-            modelAndView.setViewName("login");
-            return modelAndView;
-        }
-
-        UserDto user = userService.login(userLoginRequest);
-        httpSession.setAttribute("user_id", user.getId());
-
-        return new ModelAndView("redirect:/home");
     }
 
     @GetMapping("/register")
@@ -84,21 +64,18 @@ public class IndexController {
     }
 
     @GetMapping("/home")
-    public ModelAndView getHomePage(HttpSession httpSession) {
+    public ModelAndView getHomePage(@AuthenticationPrincipal AuthenticationUserDetails principal) {
 
-        UUID userUUID = (UUID) httpSession.getAttribute("user_id");
+//        AuthenticationUserDetails principal = (AuthenticationUserDetails) SecurityContextHolder
+//                .getContext()
+//                .getAuthentication()
+//                .getPrincipal();
 
-        UserDto user = userService.getById(userUUID);
+        UserDto user = userService.getById(principal.getId());
 
         ModelAndView modelAndView = new ModelAndView("home");
         modelAndView.addObject("user", user);
 
         return modelAndView;
-    }
-
-    @GetMapping("/logout")
-    public ModelAndView getLogoutPage(HttpSession httpSession) {
-        httpSession.invalidate();
-        return new ModelAndView("redirect:/");
     }
 }

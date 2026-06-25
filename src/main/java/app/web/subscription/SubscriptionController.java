@@ -1,14 +1,13 @@
 package app.web.subscription;
 
 import app.model.dto.user.UserDto;
+import app.service.user.AuthenticationUserDetails;
 import app.service.user.UserService;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.util.UUID;
 
 @Controller
 @RequestMapping("/subscriptions")
@@ -30,10 +29,9 @@ public class SubscriptionController {
     }
 
     @GetMapping("/history")
-    public ModelAndView getSubscriptionHistoryPage(HttpSession session) {
+    public ModelAndView getSubscriptionHistoryPage(@AuthenticationPrincipal AuthenticationUserDetails principal) {
 
-        UUID userUUID = (UUID) session.getAttribute("user_id");
-        UserDto user = userService.getById(userUUID);
+        UserDto user = userService.getById(principal.getId());
 
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("subscription-history");

@@ -5,6 +5,7 @@ import app.mapper.user.UserMapper;
 import app.model.dto.transaction.TransactionDto;
 import app.model.dto.transfer.TransferRequest;
 import app.model.dto.user.UserDto;
+import app.model.dto.wallet.WalletDto;
 import app.model.entity.transaction.Transaction;
 import app.model.entity.transaction.TransactionStatus;
 import app.model.entity.transaction.TransactionType;
@@ -18,9 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Currency;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -34,8 +34,7 @@ public class WalletService {
         this.transactionService = transactionService;
     }
 
-    //TODO: Create TransactionDTO
-    public Transaction topUp(UUID walletId, BigDecimal amount) {
+    public TransactionDto topUp(UUID walletId, BigDecimal amount) {
 
         Optional<Wallet> optionalWallet = walletRepository.findById(walletId);
 
@@ -48,9 +47,9 @@ public class WalletService {
 
         if (wallet.getStatus().equals(WalletStatus.INACTIVE)) {
 
-            return transactionService.createNewTransaction(
+            Transaction transaction = transactionService.createNewTransaction(
                     wallet.getOwner(),
-                    "Some Sender",
+                    wallet.getOwner().getUsername(),
                     wallet.getId().toString(),
                     amount,
                     wallet.getBalance(),
@@ -60,15 +59,16 @@ public class WalletService {
                     description,
                     "Wallet is inactive. Please contact support for more details."
             );
+            return TransactionMapper.toDto(transaction);
         }
 
         wallet.setBalance(wallet.getBalance().add(amount));
         wallet.setUpdatedOn(LocalDateTime.now());
         walletRepository.save(wallet);
 
-        return transactionService.createNewTransaction(
+        Transaction transaction = transactionService.createNewTransaction(
                 wallet.getOwner(),
-                "Some Sender",
+                wallet.getOwner().getUsername(),
                 wallet.getId().toString(),
                 amount,
                 wallet.getBalance(),
@@ -78,6 +78,7 @@ public class WalletService {
                 description,
                 null
         );
+        return TransactionMapper.toDto(transaction);
     }
 
     public Wallet createDefaultWallet(User user) {
@@ -207,6 +208,43 @@ public class WalletService {
                 "Transfer to %s.".formatted(transferRequest.getToUsername()),
                 null);
         return TransactionMapper.toDto(transaction);
+    }
+
+    public void switchStatus(String walletId, UUID id) {
+
+        Optional<Wallet> optionalWallet = walletRepository.findById(UUID.fromString(walletId));
+
+        if (optionalWallet.isEmpty()) {
+            throw new RuntimeException("Wallet with id [%s] not found.".formatted(walletId));
+        }
+
+        Wallet wallet = optionalWallet.get();
+
+        if (!wallet.getOwner().getId().equals(id)) {
+            throw new RuntimeException("You are not authorized to switch the status of this wallet.");
+        }
+
+        if (wallet.getStatus().equals(WalletStatus.ACTIVE)) {
+            wallet.setStatus(WalletStatus.INACTIVE);
+        } else {
+            wallet.setStatus(WalletStatus.ACTIVE);
+        }
+
+        wallet.setUpdatedOn(LocalDateTime.now());
+        walletRepository.save(wallet);
+    }
+
+    public Map<UUID, List<TransactionDto>> getLastFourTransactions(List<WalletDto> wallets) {
+
+        Map<UUID, List<TransactionDto>> transactionsByWalletId = new HashMap<>();
+
+        for (WalletDto wallet : wallets) {
+            List<TransactionDto> transactions = transactionService.getLastFourTransactionsByWallet(wallet);
+            transactionsByWalletId.put(wallet.getId(), transactions);
+        }
+
+
+        return transactionsByWalletId;
     }
 }
 
