@@ -123,11 +123,10 @@
             <p th:if="${transaction.status.name() == 'FAILED'}" class="status terminated">FAILED</p>
             <p th:if="${transaction.status.name() == 'SUCCEEDED'}" class="status active">SUCCEEDED</p>
           </td>
-          <td th:if="${transaction.type.name() == 'WITHDRAWAL'}"
-              th:text="${transaction.type.name() == 'DEPOSIT' ?
-               '+' + transaction.amount + ' ' + transaction.getCurrency()
-              : '-' + transaction.amount + ' ' + transaction.getCurrency()
-               }" ></td>
+
+          <td th:if="${transaction.status.name() == 'FAILED'}" th:text="${transaction.type.name() == 'DEPOSIT' ? '+' + transaction.amount + ' EUR' : '-' + transaction.amount + ' EUR'}" class="crosslined"></td>
+          <td th:if="${transaction.status.name() == 'SUCCEEDED'}" th:text="${transaction.type.name() == 'DEPOSIT' ? '+' + transaction.amount + ' EUR' : '-' + transaction.amount  + ' EUR'}"></td>
+
           <td th:text="${transaction.balanceLeft + ' ' + transaction.getCurrency()}"></td>
 
           <td style="text-align: left"
