@@ -1,5 +1,6 @@
 package app.service.transaction;
 
+import app.exception.transaction.TransactionNotFoundException;
 import app.mapper.transaction.TransactionMapper;
 import app.model.dto.transaction.TransactionDto;
 import app.model.dto.wallet.WalletDto;
@@ -60,7 +61,7 @@ public class TransactionService {
 
     public TransactionDto getById(String id) {
         Transaction transaction = transactionRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new RuntimeException("Transaction not found with id: " + id));
+                .orElseThrow(() -> new TransactionNotFoundException(UUID.fromString(id)));
         return TransactionMapper.toDto(transaction);
     }
 

@@ -6,6 +6,7 @@ import app.model.entity.subscription.SubscriptionStatus;
 import app.model.entity.subscription.SubscriptionType;
 import app.model.entity.user.User;
 import app.repository.subscription.SubscriptionRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @Transactional
 public class SubscriptionService {
@@ -38,7 +40,7 @@ public class SubscriptionService {
                 .createdOn(now)
                 .build();
 
-        //TODO: Log some proper info message
+        log.info("Created subscription: \n{}", subscription.toString());
         subscriptionRepository.save(subscription);
 
         return subscription;

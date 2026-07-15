@@ -1,1 +1,11 @@
 /.idea/
+/target/
+# IDE / editor
+*.iml
+.vscode/
+# macOS
+.DS_Store
+# Logs
+*.log
+# Build output
+/out/
