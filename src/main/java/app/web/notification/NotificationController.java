@@ -26,9 +26,8 @@ public class NotificationController {
 
     @GetMapping
     public ModelAndView getNotifications(@AuthenticationPrincipal AuthenticationUserDetails principal) {
-
-        List<NotificationResponse> notificationsHistory = Objects.requireNonNull(notificationService
-                        .getNotificationsHistory(principal.getId().toString()).getBody())
+        List<NotificationResponse> notificationsHistory = notificationService
+                .getNotificationsHistory(principal.getId().toString())
                 .stream()
                 .limit(5)
                 .toList();
