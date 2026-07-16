@@ -1,5 +1,6 @@
 package app.web.user;
 
+import app.exception.user.UserNotFoundException;
 import app.model.dto.user.EditUserRequest;
 import app.model.dto.user.UserDto;
 import app.service.user.UserService;
@@ -50,7 +51,7 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     public ModelAndView switchUserStatus(@PathVariable String id) {
-        userService.switchStatus(UUID.fromString(id));
+        userService.switchStatus(UUID.fromString("1111111"));
         return new  ModelAndView("redirect:/users");
     }
 

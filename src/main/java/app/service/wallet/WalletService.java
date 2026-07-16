@@ -1,5 +1,7 @@
 package app.service.wallet;
 
+import app.exception.wallet.UnauthorizedWalletAccessException;
+import app.exception.wallet.WalletNotFoundException;
 import app.mapper.transaction.TransactionMapper;
 import app.mapper.user.UserMapper;
 import app.model.dto.transaction.TransactionDto;
@@ -39,7 +41,7 @@ public class WalletService {
         Optional<Wallet> optionalWallet = walletRepository.findById(walletId);
 
         if (optionalWallet.isEmpty()) {
-            throw new RuntimeException("Wallet with id [%s] not found.".formatted(walletId));
+            throw new WalletNotFoundException(walletId.toString());
         }
 
         Wallet wallet = optionalWallet.get();
@@ -101,7 +103,7 @@ public class WalletService {
         Optional<Wallet> optionalWallet = walletRepository.findById(walledId);
 
         if (optionalWallet.isEmpty()) {
-            throw new RuntimeException("Wallet with id [%s] not found.".formatted(walledId));
+            throw new WalletNotFoundException(walledId.toString());
         }
 
         Wallet wallet = optionalWallet.get();
@@ -159,7 +161,7 @@ public class WalletService {
     public TransactionDto transferFunds(UserDto senderDto, TransferRequest transferRequest) {
         User sender = UserMapper.toEntity(senderDto);
         Wallet senderWallet = walletRepository.findById(transferRequest.getFromWalletId())
-                .orElseThrow(() -> new RuntimeException("Wallet with id [%s] not found.".formatted(transferRequest.getFromWalletId())));
+                .orElseThrow(() -> new WalletNotFoundException(transferRequest.getFromWalletId().toString()));
 
         Optional<Wallet> receiver = walletRepository.findAllByOwner_Username(transferRequest.getToUsername())
                 .stream()
@@ -215,13 +217,13 @@ public class WalletService {
         Optional<Wallet> optionalWallet = walletRepository.findById(UUID.fromString(walletId));
 
         if (optionalWallet.isEmpty()) {
-            throw new RuntimeException("Wallet with id [%s] not found.".formatted(walletId));
+            throw new WalletNotFoundException(walletId);
         }
 
         Wallet wallet = optionalWallet.get();
 
         if (!wallet.getOwner().getId().equals(id)) {
-            throw new RuntimeException("You are not authorized to switch the status of this wallet.");
+            throw new UnauthorizedWalletAccessException();
         }
 
         if (wallet.getStatus().equals(WalletStatus.ACTIVE)) {

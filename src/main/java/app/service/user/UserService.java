@@ -1,5 +1,7 @@
 package app.service.user;
 
+import app.exception.user.UserAlreadyExistsException;
+import app.exception.user.UserNotFoundException;
 import app.mapper.user.UserMapper;
 import app.model.dto.user.EditUserRequest;
 import app.model.dto.user.UserDto;
@@ -40,27 +42,13 @@ public class UserService implements UserDetailsService {
         this.walletService = walletService;
     }
 
-//    public UserDto login(UserLoginRequest userLoginRequest) {
-//        Optional<User> optionalUser = userRepository.findByUsername(userLoginRequest.getUsername());
-//
-//        if (optionalUser.isEmpty() ||
-//                !passwordEncoder.matches(userLoginRequest.getPassword(), optionalUser.get().getPassword())
-//        ) {
-//
-//            throw new RuntimeException("Username or password mismatch!");
-//        }
-//
-//        return UserMapper.toUserDto(optionalUser.get());
-//    }
-
     public UserDto register(UserRegisterRequest userRegisterRequest) {
         //   1.	Account Creation: Validate the username to ensure its unique and store the user’s details securely.
         //   You must consider persisting user’s sensitive data in a secure way!
 
         userRepository.findByUsername(userRegisterRequest.getUsername())
                 .ifPresent(user -> {
-                    //TODO: Create custom exception e.g. UserAlreadyExistsException
-                    throw new RuntimeException("User with this username already exists!");
+                    throw new UserAlreadyExistsException("User with this username already exists!");
                 });
 
         String encodedPassword = passwordEncoder.encode(userRegisterRequest.getPassword());
@@ -89,14 +77,14 @@ public class UserService implements UserDetailsService {
     public UserDto getById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(
-                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+                        () -> new UserNotFoundException(id));
         return UserMapper.toUserDto(user);
     }
 
     public UserDto update(String id, EditUserRequest editUserRequest) {
         User entity = userRepository.findById(UUID.fromString(id))
                 .orElseThrow(
-                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+                        () -> new UserNotFoundException(UUID.fromString(id)));
 
         // Update the user entity with the new information
         entity.setFirstName(editUserRequest.getFirstName());
@@ -121,7 +109,7 @@ public class UserService implements UserDetailsService {
     public void switchStatus(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(
-                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+                        () -> new UserNotFoundException(id));
 
         user.setActive(!user.isActive());
         userRepository.save(user);
@@ -132,7 +120,7 @@ public class UserService implements UserDetailsService {
     public void switchRole(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(
-                        () -> new RuntimeException("User with id [%s] does not exist.".formatted(id)));
+                        () -> new UserNotFoundException(id));
 
         if (user.getRole() == UserRole.USER) {
             user.setRole(UserRole.ADMIN);
