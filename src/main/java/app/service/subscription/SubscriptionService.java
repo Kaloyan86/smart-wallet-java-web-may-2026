@@ -43,4 +43,5 @@ public class SubscriptionService {
 
         return subscription;
     }
+    //TODO: implement monthly subscription by using @Scheduled
 }

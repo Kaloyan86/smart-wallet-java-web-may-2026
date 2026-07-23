@@ -15,6 +15,8 @@ import app.service.subscription.SubscriptionService;
 import app.service.wallet.WalletService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,6 +44,7 @@ public class UserService implements UserDetailsService {
         this.walletService = walletService;
     }
 
+    @CacheEvict(value = "users", allEntries = true)
     public UserDto register(UserRegisterRequest userRegisterRequest) {
         //   1.	Account Creation: Validate the username to ensure its unique and store the user’s details securely.
         //   You must consider persisting user’s sensitive data in a secure way!
@@ -81,6 +84,7 @@ public class UserService implements UserDetailsService {
         return UserMapper.toUserDto(user);
     }
 
+    @CacheEvict(value = "users", allEntries = true)
     public UserDto update(String id, EditUserRequest editUserRequest) {
         User entity = userRepository.findById(UUID.fromString(id))
                 .orElseThrow(
@@ -97,6 +101,7 @@ public class UserService implements UserDetailsService {
         return UserMapper.toUserDto(updatedUser);
     }
 
+    @Cacheable("users")
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
@@ -105,6 +110,7 @@ public class UserService implements UserDetailsService {
                 .toList();
     }
 
+    @CacheEvict(value = "users", allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void switchStatus(UUID id) {
         User user = userRepository.findById(id)
@@ -116,6 +122,7 @@ public class UserService implements UserDetailsService {
     }
 
 
+    @CacheEvict(value = "users", allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void switchRole(UUID id) {
         User user = userRepository.findById(id)

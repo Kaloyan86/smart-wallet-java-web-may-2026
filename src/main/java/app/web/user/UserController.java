@@ -51,7 +51,7 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     public ModelAndView switchUserStatus(@PathVariable String id) {
-        userService.switchStatus(UUID.fromString("1111111"));
+        userService.switchStatus(UUID.fromString(id));
         return new  ModelAndView("redirect:/users");
     }
 
