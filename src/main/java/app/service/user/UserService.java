@@ -11,6 +11,7 @@ import app.model.entity.user.User;
 import app.model.entity.user.UserRole;
 import app.model.entity.wallet.Wallet;
 import app.repository.user.UserRepository;
+import app.service.notification.NotificationPreferenceService;
 import app.service.subscription.SubscriptionService;
 import app.service.wallet.WalletService;
 import jakarta.transaction.Transactional;
@@ -31,17 +32,19 @@ import java.util.UUID;
 @Transactional
 public class UserService implements UserDetailsService {
 
+    private final NotificationPreferenceService notificationPreferenceService;
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private SubscriptionService subscriptionService;
     private WalletService walletService;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, SubscriptionService subscriptionService, WalletService walletService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, SubscriptionService subscriptionService, WalletService walletService, NotificationPreferenceService notificationPreferenceService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.subscriptionService = subscriptionService;
         this.walletService = walletService;
+        this.notificationPreferenceService = notificationPreferenceService;
     }
 
     @CacheEvict(value = "users", allEntries = true)
@@ -95,6 +98,12 @@ public class UserService implements UserDetailsService {
         entity.setLastName(editUserRequest.getLastName());
         entity.setProfilePicture(editUserRequest.getProfilePicture());
         entity.setEmail(editUserRequest.getEmail());
+
+        if (!editUserRequest.getEmail().isBlank()) {
+            notificationPreferenceService.saveNotificationPreference(id, true, editUserRequest.getEmail());
+        } else {
+            notificationPreferenceService.saveNotificationPreference(id, false, null);
+        }
 
         User updatedUser = userRepository.save(entity);
 

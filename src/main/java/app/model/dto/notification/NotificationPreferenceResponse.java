@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class NotificationPreferenceResponse {
 
-    private NotificationType notificationType;
+    private NotificationType type;
     private boolean enabled;
     private String contactInfo;
 }

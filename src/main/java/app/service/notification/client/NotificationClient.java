@@ -1,5 +1,7 @@
 package app.service.notification.client;
 
+import app.model.dto.notification.NotificationPreferenceRequest;
+import app.model.dto.notification.NotificationPreferenceResponse;
 import app.model.dto.notification.NotificationRequest;
 import app.model.dto.notification.NotificationResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -7,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @FeignClient(name = "notification-client",
         url = "${notification-svc-base-url}"
